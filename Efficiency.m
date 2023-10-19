@@ -64,12 +64,6 @@ for time = 1 : tmax
         idx_i = segloc_x(i);
         idy_i = segloc_y(i);
 
-        %             cand_x = find(segloc_x(i + 1 : end) >= idx_i - 1 & segloc_x(i + 1 : end) <= idx_i + 1) + i;
-        %             cand_y = find(segloc_y(i + 1 : end) >= idy_i - 1 & segloc_y(i + 1 : end) <= idy_i + 1) + i;
-        %             This is more efficient, however, there is a need to update
-        %             near_xy = intersect(cand_x, cand_y);
-        %             Mnear{i} = near_xy;
-
         control_x = find(segloc_x(1 : end) >= idx_i - 1 & segloc_x(1 : end) <= idx_i + 1);
         control_y = find(segloc_y(1 : end) >= idy_i - 1 & segloc_y(1 : end) <= idy_i + 1);
         near2 = intersect(control_x, control_y);
@@ -115,47 +109,9 @@ for time = 1 : tmax
 
     %% Plotting at each time interval 
 
-%     plot(x(1 : N1), y(1 : N1), '.', x(N1 + 1 : N), y(N1 + 1 : N), '.', 'MarkerSize', 15)
-%     xlim([0, Lx])
-%     ylim([0, Ly])
-% 
-%     pause(vel)
-end
-%% Final distribution plot
+    plot(x(1 : N1), y(1 : N1), '.', x(N1 + 1 : N), y(N1 + 1 : N), '.', 'MarkerSize', 15)
+    xlim([0, Lx])
+    ylim([0, Ly])
 
-figure;
-hold on
-set(gca, 'TickLabelInterpreter', 'latex', 'FontSize', 24)
-plot(x(1 : N1), y(1 : N1), '.', x(N1 + 1 : N), y(N1 + 1 : N), '.', 'MarkerSize', 15)
-xlim([0, Lx])
-ylim([0, Ly])
-%% Further plots
-
-additional = true;
-
-if additional
-
-    id1 = ceil(N1 * rand);
-    id2 = N1 + ceil(N2 * rand);
-    figure;
-    hold on
-    grid on
-    set(gca, 'TickLabelInterpreter', 'latex', 'FontSize', 24)
-
-    plot(MX(id1, :), MY(id1, :), 'LineWidth', 1.1)
-    plot(MX(id2, :), MY(id2, :), 'LineWidth', 1.1)
-
-    plot(MX(id1, 1), MY(id1, 1), 'p', 'LineWidth', 1.1)
-    plot(MX(id1, end), MY(id1, end), 'o', 'LineWidth', 1.1)
-
-    plot(MX(id2, 1), MY(id2, 1), 'p', 'LineWidth', 1.1)
-    plot(MX(id2, end), MY(id2, end), 'o', 'LineWidth', 1.1)
-
-    legend('Species 1', 'Species 2', 'Species 1 -Starting point', 'Species 1 - Ending point', ...
-        'Species 2 - Starting point', 'Species 2 - Ending point', ...
-        'Interpreter', 'latex', 'FontSize', 24, 'Location', 'best')
-    xlabel('$x$', 'Interpreter', 'latex', 'FontSize', 24)
-    ylabel('$y$', 'Interpreter', 'latex', 'FontSize', 24)
-
-    axis tight
+    pause(vel)
 end
