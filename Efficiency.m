@@ -82,22 +82,21 @@ for time = 1 : tmax
     %% Update position & Boundaries Implementation
 
     % x(t + 1) = x(t) + v(t) * delta_t
-    x0 = x;
-    y0 = y;
-    % First update to find which particle bounce
     x = x + velv .* cos(theta) * dt;
-    y = y + velv .* sin(theta) * dt;  
+    y = y + velv .* sin(theta) * dt;
 
     noise_v = [noise1 * (rand(1, N1) - 0.5), noise2 * (rand(1, N2) - 0.5)];        
     theta = avg_th + noise_v;
 
     % Bouncing angles
-    theta(x < 0 | x > Lx) = pi - theta(x < 0 | x > Lx); 
-    theta(y < 0 | y > Ly) = - theta(y < 0 | y > Ly);
+    theta(x < 0 | x >= Lx) = pi - theta(x < 0 | x >= Lx); 
+    theta(y < 0 | y >= Ly) = - theta(y < 0 | y >= Ly);
 
-    % True update
-    x = x0 + velv .* cos(theta) * dt;
-    y = y0 + velv .* sin(theta) * dt;  
+    x(x >= Lx) =  2 * Lx - x(x >= Lx);
+    x(x < 0) = 0;
+
+    y(y >= Ly) =  2 * Ly - y(y >= Ly);
+    y(y < 0) = 0;  
 
     % Trajectories storing
     for i = 1 : N
