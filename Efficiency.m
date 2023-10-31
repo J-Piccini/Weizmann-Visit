@@ -7,8 +7,8 @@ tmax = 2e3;    % Simulation length
 dt = 1;    % Time step
 r = 0.1;    % Influence radius
 
-Ly = 2;    % Height of the environment
-Lx = Ly * 7;    % Lx / Ly is taken from experimentla set up (2mm thickness and 1.4cm diameter)
+Ly = 7;    % Height of the environment
+Lx = Ly * 1;    % Lx / Ly is taken from experimentla set up (2mm thickness and 1.4cm diameter)
 Lgridy = 1 : r : Ly;    % y-grid (for speed purposes)
 Lgridx = 1 : r : Lx;    % x-grid (for speed purposes)
 %% Species characterisation
@@ -43,24 +43,17 @@ for time = 1 : tmax
     Mnear = cell(1, N);
     MM = zeros(N);
 
-    % Boundaries check
-    x(x < 0) = -x(x < 0);
-    x(x > Lx) = 2 * Lx - x(x > Lx);
-    y(y < 0) = -y(y < 0);
-    y(y > Ly) = 2 * Ly - y(y > Ly);
-
-    % Box of each particle
-    for i = 1 : N 
+    % Particles in the interaction radius
+    for i = 1 : N
         idx_x = x(i) > Lgridx;
-        segloc_x(i) = min(find(idx_x == 0));
+        segloc_x(i) = min(find(idx_x == 0)) - 1;
 
         idx_y = y(i) > Lgridy;
-        segloc_y(i) = min(find(idx_y == 0));
+        segloc_y(i) = min(find(idx_y == 0)) - 1;
     end
 
-
     % Particles in the interaction radius
-    for i = 1 : N 
+    for i = 1 : N
         idx_i = segloc_x(i);
         idy_i = segloc_y(i);
 
@@ -68,12 +61,10 @@ for time = 1 : tmax
         control_y = find(segloc_y(1 : end) >= idy_i - 1 & segloc_y(1 : end) <= idy_i + 1);
         near2 = intersect(control_x, control_y);
 
-        distances = sqrt((x(i) - x(near2)).^2 + (y(i) - y(near2)).^2);
-
         Mnear{i} = near2(distances <= r);
 
         if ~isempty(Mnear{i})
-            avg_th(i) = atan2(mean(sin(theta(Mnear{i}))), mean(cos(theta(Mnear{i}))));
+            avg_th(i) = atan2(mean(sin(theta(Mnear{i}) .* weights)), mean(cos(theta(Mnear{i}) .* weights)));
         else
             avg_th(i) = theta(i);
         end
@@ -113,4 +104,34 @@ for time = 1 : tmax
     ylim([0, Ly])
 
     pause(vel)
+end
+%% Further plots
+
+additional = false;
+
+if additional
+
+    id1 = ceil(N1 * rand);
+    id2 = N1 + ceil(N2 * rand);
+    figure;
+    hold on
+    grid on
+    set(gca, 'TickLabelInterpreter', 'latex', 'FontSize', 24)
+
+    plot(MX(id1, :), MY(id1, :), 'LineWidth', 1.1)
+    plot(MX(id2, :), MY(id2, :), 'LineWidth', 1.1)
+
+    plot(MX(id1, 1), MY(id1, 1), 'p', 'LineWidth', 1.1)
+    plot(MX(id1, end), MY(id1, end), 'o', 'LineWidth', 1.1)
+
+    plot(MX(id2, 1), MY(id2, 1), 'p', 'LineWidth', 1.1)
+    plot(MX(id2, end), MY(id2, end), 'o', 'LineWidth', 1.1)
+
+    legend('Species 1', 'Species 2', 'Species 1 -Starting point', 'Species 1 - Ending point', ...
+        'Species 2 - Starting point', 'Species 2 - Ending point', ...
+        'Interpreter', 'latex', 'FontSize', 24, 'Location', 'best')
+    xlabel('$x$', 'Interpreter', 'latex', 'FontSize', 24)
+    ylabel('$y$', 'Interpreter', 'latex', 'FontSize', 24)
+
+    axis tight
 end
