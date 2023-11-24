@@ -114,7 +114,3 @@ while loop
     hold off
     pause(0.001)
 end
-
-plot(x, y, '.', 'MarkerSize', 15)
-xlim([0 Lx]);
-ylim([0 Ly]);
