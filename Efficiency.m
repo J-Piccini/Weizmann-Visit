@@ -1,137 +1,120 @@
 close all;
 clear;
 clc;
-%% Environment parameter
+%% Environment definition
 
-tmax = 2e3;    % Simulation length
-dt = 1;    % Time step
-r = 0.1;    % Influence radius
+N = 100;
+density = 3;
+Ly = floor(sqrt(N / (density * 4)));
+Lx = 4 * Ly;
+Lx = 32;
+Ly = 32;
+N = Lx * Ly * density;
 
-Ly = 7;    % Height of the environment
-Lx = Ly * 1;    % Lx / Ly is taken from experimentla set up (2mm thickness and 1.4cm diameter)
-Lgridy = 1 : r : Ly;    % y-grid (for speed purposes)
-Lgridx = 1 : r : Lx;    % x-grid (for speed purposes)
-%% Species characterisation
+r0 = 1;
+grid_x = linspace(0, Lx, ceil(Lx / r0));
+grid_y = linspace(0, Ly, ceil(Ly / r0));
 
-noise0 = 0.1;    % Standard value for noise
-knoise = 1;    % Noise modifier (for second species)
-noise1 = noise0;    % Noise for species 1 
-noise2 = knoise * noise0;    % Noise for species 2 
-
-N = 300;    % Number of particles
-N1 = round(0.5 * N);    % 50-50 particles division, round for cases when N is odd
-N2 = N - N1;
-
-vel = 0.03;    % Standard value for velocity
-kvel = 2;    % Velocity modifier parameter (for second species)
-velv = [vel * ones(1, N1), kvel * vel * ones(1, N2)];    % Velocity vector
+tSim = 1e3;
+dt = 1;
 %%
 
 x = Lx * rand(1, N);
 y = Ly * rand(1, N);
 theta = 2 * pi * (rand(1, N) - 0.5);
 
-MX = zeros(N, tmax);
-MY = zeros(N, tmax);
-MTH = zeros(N, tmax);
+vel0 = 0.5;
+noise = 0.3;
+loop = true;
+time = 0;
+while loop
+    time = time + 1;
+    
 
-for time = 1 : tmax
+    x(x <= 0) = Lx + x(x <= 0);
+    x(x >= Lx) = x(x >= Lx) - Lx;
+
+    y(y >= Ly) =  2 * Ly - y(y >= Ly);
+    y(y <= 0) = abs(y(y <= 0));
 
     % Utilies generation
     segloc_x = zeros(1, N);
     segloc_y = zeros(1, N);
-    Mnear = cell(1, N);
-    MM = zeros(N);
 
     % Particles in the interaction radius
     for i = 1 : N
-        idx_x = x(i) > Lgridx;
+        idx_x = x(i) > grid_x;
         segloc_x(i) = min(find(idx_x == 0)) - 1;
 
-        idx_y = y(i) > Lgridy;
+        idx_y = y(i) > grid_y;
         segloc_y(i) = min(find(idx_y == 0)) - 1;
     end
 
-    % Particles in the interaction radius
+    clearvars idx_x idx_y
+    
     for i = 1 : N
-        idx_i = segloc_x(i);
-        idy_i = segloc_y(i);
+        tX = segloc_x(i);
+        nX = find(segloc_x >= tX - 1 & segloc_x <= tX + 1);
+        if nX
+            tY = segloc_y(i);
+            nY = find(segloc_y >= tY - 1 & segloc_y <= tY + 1);
 
-        control_x = find(segloc_x(1 : end) >= idx_i - 1 & segloc_x(1 : end) <= idx_i + 1);
-        control_y = find(segloc_y(1 : end) >= idy_i - 1 & segloc_y(1 : end) <= idy_i + 1);
-        near2 = intersect(control_x, control_y);
+            if nY
+                cand = intersect(nX, nY);
 
-        Mnear{i} = near2(distances <= r);
+                distances = sqrt((x(i) - x(cand)).^2 + (y(i) - y(cand)).^2);
+                near = cand(distances <= r0);
 
-        if ~isempty(Mnear{i})
-            avg_th(i) = atan2(mean(sin(theta(Mnear{i}) .* weights)), mean(cos(theta(Mnear{i}) .* weights)));
-        else
-            avg_th(i) = theta(i);
+                if near
+                    avg_th(i) = atan2(mean(sin(theta(near))), mean(cos(theta(near))));
+                else
+                    avg_th(i) = theta(i);
+                end
+            end
         end
     end
 
-    %% Update position & Boundaries Implementation
+    theta = avg_th + 2 * noise * pi * (rand(1, N) - 0.5);
+    x = x + vel0 * cos(theta) * dt;
+    y = y + vel0 * sin(theta) * dt;
 
-    % x(t + 1) = x(t) + v(t) * delta_t
-    x = x + velv .* cos(theta) * dt;
-    y = y + velv .* sin(theta) * dt;
+    %% Reflective Boundary
 
-    noise_v = [noise1 * (rand(1, N1) - 0.5), noise2 * (rand(1, N2) - 0.5)];        
-    theta = avg_th + noise_v;
+%     theta(x < 0 | x >= Lx) = pi - theta(x < 0 | x >= Lx);
+%     theta(y < 0 | y >= Ly) = - theta(y < 0 | y >= Ly);
+% 
+%     x(x >= Lx) =  2 * Lx - x(x >= Lx);
+%     x(x <= 0) = abs(x(x <= 0));
 
-    % Bouncing angles
-    theta(x < 0 | x >= Lx) = pi - theta(x < 0 | x >= Lx); 
-    theta(y < 0 | y >= Ly) = - theta(y < 0 | y >= Ly);
+%     y(y >= Ly) =  2 * Ly - y(y >= Ly); % Reflective y
+%     y(y <= 0) = abs(y(y <= 0));
 
-    x(x >= Lx) =  2 * Lx - x(x >= Lx);
-    x(x < 0) = 0;
+    %% Periodic Boundary
+    x(x < 0) = Lx + x(x < 0); % Reflective x
+    x(x > Lx) = x(x > Lx) - Lx;
 
-    y(y >= Ly) =  2 * Ly - y(y >= Ly);
-    y(y < 0) = 0;  
+    y(y < 0) = Ly + y(y < 0);
+    y(y > Ly) = y(y > Ly) - Ly;
 
-    % Trajectories storing
-    for i = 1 : N
-        MX(i, time) = x(i);
-        MY(i, time) = y(i);
+    
+    %toc
+    
+    if ~mod(time, 10)
+        fprintf('\nTime: %d', time)
+        if ~mod(time, 100)
+            clc;
+        end
+        
     end
-    % Orientation storing
-    MTH(:, time) = theta(:);
-
-    %% Plotting at each time interval 
-
-    plot(x(1 : N1), y(1 : N1), '.', x(N1 + 1 : N), y(N1 + 1 : N), '.', 'MarkerSize', 15)
-    xlim([0, Lx])
-    ylim([0, Ly])
-
-    pause(vel)
-end
-%% Further plots
-
-additional = false;
-
-if additional
-
-    id1 = ceil(N1 * rand);
-    id2 = N1 + ceil(N2 * rand);
-    figure;
+    plot(x, y, '.', 'MarkerSize', 15)
     hold on
-    grid on
-    set(gca, 'TickLabelInterpreter', 'latex', 'FontSize', 24)
-
-    plot(MX(id1, :), MY(id1, :), 'LineWidth', 1.1)
-    plot(MX(id2, :), MY(id2, :), 'LineWidth', 1.1)
-
-    plot(MX(id1, 1), MY(id1, 1), 'p', 'LineWidth', 1.1)
-    plot(MX(id1, end), MY(id1, end), 'o', 'LineWidth', 1.1)
-
-    plot(MX(id2, 1), MY(id2, 1), 'p', 'LineWidth', 1.1)
-    plot(MX(id2, end), MY(id2, end), 'o', 'LineWidth', 1.1)
-
-    legend('Species 1', 'Species 2', 'Species 1 -Starting point', 'Species 1 - Ending point', ...
-        'Species 2 - Starting point', 'Species 2 - Ending point', ...
-        'Interpreter', 'latex', 'FontSize', 24, 'Location', 'best')
-    xlabel('$x$', 'Interpreter', 'latex', 'FontSize', 24)
-    ylabel('$y$', 'Interpreter', 'latex', 'FontSize', 24)
-
-    axis tight
+    quiver(x, y, vel0 * cos(theta), vel0 * sin(theta), 0);
+    xlim([0 Lx]);
+    ylim([0 Ly]);
+    hold off
+    pause(0.001)
 end
+
+plot(x, y, '.', 'MarkerSize', 15)
+xlim([0 Lx]);
+ylim([0 Ly]);
