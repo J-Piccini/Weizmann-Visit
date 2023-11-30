@@ -19,7 +19,7 @@ for i = 1 : height(lt)
 end
 
 lt = lt(img_idx, :);
-
+clc;
 %%
 
 flowFarn = opticalFlowFarneback('NumPyramidLevels', 4);
@@ -28,7 +28,7 @@ h = figure;
 
 j = 0;
 nFrames = height(lt);
-loop = true;
+loop = 1;
 
 while loop
     j = j + 1;
@@ -45,11 +45,9 @@ while loop
     set(f(1), 'Color', 'y')
     hold off
     
-    name_save = append(output_path, sprintf('%04d', j), '.png');
-    ax = gca;
-    exportgraphics(ax, name_save ,'Resolution',300)
- 
     if j == nFrames
-        loop = false;
+        loop = 0;
     end
+
+    pause(0.1)
 end
